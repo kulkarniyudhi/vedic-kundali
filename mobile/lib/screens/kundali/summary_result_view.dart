@@ -33,6 +33,7 @@ class _SummaryResultViewState extends State<SummaryResultView> {
 
   Future<void> _downloadAndOpenPdf() async {
     setState(() => _isDownloadingPdf = true);
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -43,7 +44,7 @@ class _SummaryResultViewState extends State<SummaryResultView> {
               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
             ),
             const SizedBox(width: 12),
-            Text(AppStrings.pdfGenerating),
+            Expanded(child: Text(AppStrings.pdfGenerating)),
           ],
         ),
         duration: const Duration(seconds: 2),
@@ -58,16 +59,19 @@ class _SummaryResultViewState extends State<SummaryResultView> {
       // Track PDF download event for Flagsmith experiment
       unawaited(FlagsmithService.trackConversion('pdf_download'));
 
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.pdfReady(file.path.split('/').last)),
           backgroundColor: AppTheme.successGreen,
+          showCloseIcon: true,
+          closeIconColor: Colors.white,
           action: SnackBarAction(
             label: AppStrings.openPdf,
             textColor: Colors.white,
             onPressed: () => KundaliApi.openPdfFile(file),
           ),
-          duration: const Duration(seconds: 6),
+          duration: const Duration(seconds: 4),
         ),
       );
 
@@ -75,10 +79,13 @@ class _SummaryResultViewState extends State<SummaryResultView> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isDownloadingPdf = false);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.pdfError(e.toString())),
           backgroundColor: AppTheme.dangerRed,
+          showCloseIcon: true,
+          closeIconColor: Colors.white,
         ),
       );
     }
@@ -374,7 +381,7 @@ class _SummaryResultViewState extends State<SummaryResultView> {
                       child: NorthIndianChartWidget(
                         chartData: k.charts[_activeChartKey] ?? k.charts['lagna']!,
                         planetDetails: k.planets,
-                        size: 330,
+                        size: (MediaQuery.sizeOf(context).width - 48).clamp(240.0, 330.0),
                         showDegrees: _showDegreesOnChart,
                       ),
                     ),

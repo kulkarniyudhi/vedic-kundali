@@ -45,10 +45,11 @@ class GunMilanApi {
 
     if (res.statusCode == 200) {
       final dir = await getApplicationDocumentsDirectory();
-      final boyName = gunMilan.boy.birthInfo.name.isNotEmpty ? gunMilan.boy.birthInfo.name : 'boy';
-      final girlName = gunMilan.girl.birthInfo.name.isNotEmpty ? gunMilan.girl.birthInfo.name : 'girl';
-      final safeName = (fileName ?? 'gunmilan_${boyName}_$girlName')
-          .replaceAll(RegExp(r'[^\w\-_.]'), '_');
+      final boySlug = ApiClient.sanitizeFileSlug(gunMilan.boy.birthInfo.name, 'boy');
+      final girlSlug = ApiClient.sanitizeFileSlug(gunMilan.girl.birthInfo.name, 'girl');
+      final safeName = fileName != null
+          ? ApiClient.sanitizeFileSlug(fileName, 'gunmilan_report')
+          : 'gunmilan_${boySlug}_$girlSlug';
       final file = File('${dir.path}/$safeName.pdf');
       await file.writeAsBytes(res.bodyBytes);
       return file;

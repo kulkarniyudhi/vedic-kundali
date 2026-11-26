@@ -38,6 +38,7 @@ class _KundaliResultScreenState extends State<KundaliResultScreen> with SingleTi
 
   Future<void> _downloadAndOpenPdf() async {
     setState(() => _isDownloadingPdf = true);
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -48,7 +49,7 @@ class _KundaliResultScreenState extends State<KundaliResultScreen> with SingleTi
               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
             ),
             const SizedBox(width: 12),
-            Text(AppStrings.pdfGenerating),
+            Expanded(child: Text(AppStrings.pdfGenerating)),
           ],
         ),
         duration: const Duration(seconds: 2),
@@ -63,16 +64,19 @@ class _KundaliResultScreenState extends State<KundaliResultScreen> with SingleTi
       // Track PDF download conversion event for Flagsmith A/B experiment
       unawaited(FlagsmithService.trackConversion('pdf_download'));
 
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.pdfReady(file.path.split('/').last)),
           backgroundColor: AppTheme.successGreen,
+          showCloseIcon: true,
+          closeIconColor: Colors.white,
           action: SnackBarAction(
             label: AppStrings.openPdf,
             textColor: Colors.white,
             onPressed: () => KundaliApi.openPdfFile(file),
           ),
-          duration: const Duration(seconds: 6),
+          duration: const Duration(seconds: 4),
         ),
       );
 
@@ -80,10 +84,13 @@ class _KundaliResultScreenState extends State<KundaliResultScreen> with SingleTi
     } catch (e) {
       if (!mounted) return;
       setState(() => _isDownloadingPdf = false);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.pdfError(e.toString())),
           backgroundColor: AppTheme.dangerRed,
+          showCloseIcon: true,
+          closeIconColor: Colors.white,
         ),
       );
     }
@@ -206,24 +213,31 @@ class _KundaliResultScreenState extends State<KundaliResultScreen> with SingleTi
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${info.date} • ${info.time} (${info.day})',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.darkWood,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${info.date} • ${info.time} (${info.day})',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.darkWood,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${info.place} • ${info.coordinates}',
-                      style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        '${info.place} • ${info.coordinates}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -308,15 +322,21 @@ class _KundaliResultScreenState extends State<KundaliResultScreen> with SingleTi
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                chart.title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.deepVermilion,
+              Expanded(
+                child: Text(
+                  chart.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.deepVermilion,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(AppStrings.showDegrees, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
                   Switch.adaptive(
@@ -336,7 +356,7 @@ class _KundaliResultScreenState extends State<KundaliResultScreen> with SingleTi
             child: NorthIndianChartWidget(
               chartData: chart,
               planetDetails: k.planets,
-              size: 330,
+              size: (MediaQuery.sizeOf(context).width - 48).clamp(240.0, 330.0),
               showDegrees: _showDegreesOnChart,
             ),
           ),
@@ -360,30 +380,42 @@ class _KundaliResultScreenState extends State<KundaliResultScreen> with SingleTi
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 12,
-                            backgroundColor: AppTheme.chipBackground,
-                            child: Text(
-                              '$houseNum',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.deepVermilion,
+                      Expanded(
+                        flex: 3,
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundColor: AppTheme.chipBackground,
+                              child: Text(
+                                '$houseNum',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.deepVermilion,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            AppStrings.houseItem(houseNum, rashiNum),
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                          ),
-                        ],
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                AppStrings.houseItem(houseNum, rashiNum),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      Wrap(
-                        spacing: 6,
-                        children: planets.isEmpty
+                      const SizedBox(width: 8),
+                      Flexible(
+                        flex: 2,
+                        child: Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: planets.isEmpty
                             ? [
                                 Text(
                                   AppStrings.empty,
@@ -410,6 +442,7 @@ class _KundaliResultScreenState extends State<KundaliResultScreen> with SingleTi
                                   ),
                                 );
                               }).toList(),
+                        ),
                       ),
                     ],
                   ),

@@ -33,6 +33,16 @@ class ApiClient {
     _baseUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
   }
 
+  /// Sanitize a name segment for safe cross-platform filenames without repeated underscores.
+  static String sanitizeFileSlug(String raw, String fallback) {
+    final cleaned = raw
+        .trim()
+        .replaceAll(RegExp(r'[^a-zA-Z0-9\-]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    return cleaned.isNotEmpty ? cleaned : fallback;
+  }
+
   /// Build standard headers including Laravel Sanctum Bearer token and active language header.
   static Map<String, String> buildHeaders([Map<String, String>? extra]) {
     final headers = <String, String>{

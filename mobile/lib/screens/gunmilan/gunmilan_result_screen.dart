@@ -20,6 +20,7 @@ class _GunMilanResultScreenState extends State<GunMilanResultScreen> {
 
   Future<void> _downloadAndOpenPdf() async {
     setState(() => _isDownloadingPdf = true);
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -30,7 +31,7 @@ class _GunMilanResultScreenState extends State<GunMilanResultScreen> {
               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
             ),
             const SizedBox(width: 12),
-            Text(AppStrings.pdfGunMilanGenerating),
+            Expanded(child: Text(AppStrings.pdfGunMilanGenerating)),
           ],
         ),
         duration: const Duration(seconds: 2),
@@ -42,16 +43,19 @@ class _GunMilanResultScreenState extends State<GunMilanResultScreen> {
       if (!mounted) return;
       setState(() => _isDownloadingPdf = false);
 
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.pdfReady(file.path.split('/').last)),
           backgroundColor: AppTheme.successGreen,
+          showCloseIcon: true,
+          closeIconColor: Colors.white,
           action: SnackBarAction(
             label: AppStrings.openPdf,
             textColor: Colors.white,
             onPressed: () => GunMilanApi.openPdfFile(file),
           ),
-          duration: const Duration(seconds: 6),
+          duration: const Duration(seconds: 4),
         ),
       );
 
@@ -59,10 +63,13 @@ class _GunMilanResultScreenState extends State<GunMilanResultScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isDownloadingPdf = false);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.pdfError(e.toString())),
           backgroundColor: AppTheme.dangerRed,
+          showCloseIcon: true,
+          closeIconColor: Colors.white,
         ),
       );
     }

@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mobile/models/astrology_models.dart';
 import 'package:mobile/screens/kundali/kundali_result_screen.dart';
 import 'package:mobile/screens/kundali/summary_result_view.dart';
+import 'package:mobile/services/api/api_client.dart';
 import 'package:mobile/services/flagsmith_service.dart';
 import 'package:mobile/services/localization_service.dart';
 import 'package:mobile/theme/app_theme.dart';
@@ -99,11 +100,24 @@ void main() {
     expect(find.text('Hide Full Details'), findsOneWidget);
   });
 
-  testWidgets('KundaliResultScreen (Control Variation A) renders 5 tabs', (WidgetTester tester) async {
+  testWidgets('KundaliResultScreen (Control Variation A) renders without overflow on 360px screen',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(_wrapWithLocalization(KundaliResultScreen(kundali: sampleKundaliData)));
     await tester.pumpAndSettle();
 
     expect(find.byType(TabBar), findsOneWidget);
     expect(find.byType(KundaliResultScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  test('ApiClient.sanitizeFileSlug avoids repeated underscores for non-ASCII names', () {
+    expect(ApiClient.sanitizeFileSlug('अनिकेत जोशी', '06-09-2000'), equals('06-09-2000'));
+    expect(ApiClient.sanitizeFileSlug('Aniket   Joshi!', 'report'), equals('Aniket_Joshi'));
+    expect(ApiClient.sanitizeFileSlug('   ', 'report'), equals('report'));
   });
 }

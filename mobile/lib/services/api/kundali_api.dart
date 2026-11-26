@@ -56,8 +56,14 @@ class KundaliApi {
 
     if (res.statusCode == 200) {
       final dir = await getApplicationDocumentsDirectory();
-      final safeName = (fileName ?? 'kundali_${kundali.birthInfo.name}')
-          .replaceAll(RegExp(r'[^\w\-_.]'), '_');
+      final dateFallback = kundali.birthInfo.date.replaceAll('/', '-').trim();
+      final nameSlug = ApiClient.sanitizeFileSlug(
+        kundali.birthInfo.name,
+        dateFallback.isNotEmpty ? dateFallback : 'report',
+      );
+      final safeName = fileName != null
+          ? ApiClient.sanitizeFileSlug(fileName, 'kundali_report')
+          : 'kundali_$nameSlug';
       final file = File('${dir.path}/$safeName.pdf');
       await file.writeAsBytes(res.bodyBytes);
       return file;
