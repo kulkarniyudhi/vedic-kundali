@@ -31,24 +31,21 @@ class ApiService {
 
   static Future<Map<String, dynamic>> login({
     required String email,
-    String? password,
-    String? otp,
+    required String password,
   }) =>
-      AuthApi.login(email: email, password: password, otp: otp);
+      AuthApi.login(email: email, password: password);
 
   static Future<Map<String, dynamic>> signup({
     required String name,
     required String email,
     required String password,
     String? phone,
-    required String otp,
   }) =>
       AuthApi.signup(
         name: name,
         email: email,
         password: password,
         phone: phone,
-        otp: otp,
       );
 
   static Future<void> logout() => AuthApi.logout();

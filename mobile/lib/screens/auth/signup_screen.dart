@@ -58,16 +58,30 @@ class _SignupScreenState extends State<SignupScreen> {
     final phone = _mobileController.text.trim();
 
     try {
-      await AuthApi.sendSignupOtp(email: email);
-
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      _showSignupOtpDialog(
+      final res = await AuthApi.signup(
         name: name,
         email: email,
         password: password,
         phone: phone,
+      );
+
+      await FlagsmithService.identifyUser();
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      final userName = res['user']?['name'] ?? name;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppStrings.welcomeUser}, $userName! ${AppStrings.signupSuccess}'),
+          backgroundColor: AppTheme.successGreen,
+        ),
+      );
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
       );
     } catch (e) {
       if (!mounted) return;
@@ -80,191 +94,6 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       );
     }
-  }
-
-  void _showSignupOtpDialog({
-    required String name,
-    required String email,
-    required String password,
-    String? phone,
-  }) {
-    final otpController = TextEditingController();
-    bool isVerifying = false;
-    bool isResending = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              const Icon(Icons.mark_email_read_outlined, color: AppTheme.primarySaffron),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  AppStrings.otpDialogTitle,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  AppStrings.otpDialogSubtitle,
-                  style: const TextStyle(fontSize: 13, color: AppTheme.darkWood),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.chipBackground,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    email,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.deepVermilion,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                TextField(
-                  controller: otpController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 8,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '••••••',
-                    counterText: '',
-                    labelText: AppStrings.otpFieldLabel,
-                    prefixIcon: const Icon(Icons.password, color: AppTheme.primarySaffron),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: isResending
-                          ? null
-                          : () async {
-                              setDialogState(() => isResending = true);
-                              try {
-                                await AuthApi.sendSignupOtp(email: email);
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(AppStrings.otpResentSuccess),
-                                    backgroundColor: AppTheme.successGreen,
-                                  ),
-                                );
-                              } catch (e) {
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(e.toString().replaceAll('ApiException: ', '')),
-                                    backgroundColor: AppTheme.dangerRed,
-                                  ),
-                                );
-                              } finally {
-                                setDialogState(() => isResending = false);
-                              }
-                            },
-                      icon: isResending
-                          ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.refresh, size: 16),
-                      label: Text(AppStrings.resend, style: const TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isVerifying ? null : () => Navigator.pop(dialogCtx),
-              child: Text(AppStrings.cancel),
-            ),
-            ElevatedButton(
-              onPressed: isVerifying
-                  ? null
-                  : () async {
-                      final otp = otpController.text.trim();
-                      if (otp.length < 6) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(AppStrings.enterSixDigitOtp),
-                            backgroundColor: AppTheme.dangerRed,
-                          ),
-                        );
-                        return;
-                      }
-
-                      setDialogState(() => isVerifying = true);
-                      try {
-                        final res = await AuthApi.signup(
-                          name: name,
-                          email: email,
-                          password: password,
-                          phone: phone,
-                          otp: otp,
-                        );
-
-                        if (!dialogCtx.mounted) return;
-                        Navigator.pop(dialogCtx);
-                        await FlagsmithService.identifyUser();
-                        if (!mounted) return;
-
-                        final userName = res['user']?['name'] ?? name;
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${AppStrings.welcomeUser}, $userName! ${AppStrings.signupSuccess}'),
-                            backgroundColor: AppTheme.successGreen,
-                          ),
-                        );
-
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (_) => const HomeScreen()),
-                          (route) => false,
-                        );
-                      } catch (e) {
-                        setDialogState(() => isVerifying = false);
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(e.toString().replaceAll('ApiException: ', '')),
-                            backgroundColor: AppTheme.dangerRed,
-                          ),
-                        );
-                      }
-                    },
-              child: isVerifying
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : Text(AppStrings.verifyAndRegister),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -494,8 +323,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                   height: 20,
                                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                 )
-                              : const Icon(Icons.mark_email_read_outlined),
-                          label: Text(_isLoading ? AppStrings.sendingOtp : AppStrings.getOtpAndRegister),
+                              : const Icon(Icons.person_add),
+                          label: Text(_isLoading ? AppStrings.loggingIn : AppStrings.signupTitle),
                         ),
                       ],
                     ),

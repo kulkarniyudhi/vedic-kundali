@@ -65,18 +65,14 @@ class AuthApi {
     }
   }
 
-  /// Authenticate user via email with password and/or OTP.
-  /// When called with password only, the server responds with `requires_otp: true` and dispatches the OTP email.
-  /// When called with OTP, the server verifies and returns the Sanctum token.
+  /// Authenticate user directly via email and password and persist Sanctum token.
   static Future<Map<String, dynamic>> login({
     required String email,
-    String? password,
-    String? otp,
+    required String password,
   }) async {
     final payload = {
       'email': email.trim().toLowerCase(),
-      if (password != null && password.isNotEmpty) 'password': password,
-      if (otp != null && otp.isNotEmpty) 'otp': otp.trim(),
+      'password': password,
     };
 
     final res = await ApiClient.post(
@@ -87,18 +83,15 @@ class AuthApi {
 
     final data = jsonDecode(res.body);
 
-    if (res.statusCode == 200 && data['success'] == true) {
-      // If token is present, login is complete
-      if (data['token'] != null) {
-        final token = data['token'] as String;
-        final user = data['user'] as Map<String, dynamic>? ?? {};
-        await AuthService.login(
-          token: token,
-          name: user['name']?.toString(),
-          email: user['email']?.toString(),
-          phone: user['phone']?.toString(),
-        );
-      }
+    if (res.statusCode == 200 && data['success'] == true && data['token'] != null) {
+      final token = data['token'] as String;
+      final user = data['user'] as Map<String, dynamic>? ?? {};
+      await AuthService.login(
+        token: token,
+        name: user['name']?.toString(),
+        email: user['email']?.toString(),
+        phone: user['phone']?.toString(),
+      );
       return data;
     } else {
       String msg = data['message'] ?? 'लॉगिन अयशस्वी झाले (${res.statusCode})';
@@ -112,21 +105,19 @@ class AuthApi {
     }
   }
 
-  /// Register new user with email OTP verification.
+  /// Register new user directly without OTP verification.
   /// Mobile phone number is optional.
   static Future<Map<String, dynamic>> signup({
     required String name,
     required String email,
     required String password,
     String? phone,
-    required String otp,
   }) async {
     final payload = {
       'name': name.trim(),
       'email': email.trim().toLowerCase(),
       'password': password,
       if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
-      'otp': otp.trim(),
     };
 
     final res = await ApiClient.post(

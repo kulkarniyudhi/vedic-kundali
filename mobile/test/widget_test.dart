@@ -218,11 +218,10 @@ void main() {
     await tester.pumpWidget(createLocalizedApp(child: const SignupScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('नोंदणी'), findsOneWidget);
+    expect(find.text('नोंदणी'), findsWidgets);
     expect(find.text('पूर्ण नाव'), findsOneWidget);
     expect(find.text('ईमेल पत्ता'), findsOneWidget);
     expect(find.text('मोबाईल क्रमांक (ऐच्छिक)'), findsOneWidget);
-    expect(find.text('OTP मिळवा व नोंदणी करा'), findsOneWidget);
 
     // Enter user registration details
     await tester.enterText(find.widgetWithText(TextFormField, 'पूर्ण नाव'), 'रमेश शर्मा');

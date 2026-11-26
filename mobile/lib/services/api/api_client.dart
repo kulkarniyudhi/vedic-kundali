@@ -22,7 +22,7 @@ class ApiClient {
     'http://192.168.31.118:8000/api',
     'http://10.0.2.2:8000/api',
     'http://localhost:8000/api',
-    'http://13.211.227.174/backend/public/api'
+    // 'http://13.211.227.174/backend/public/api'
   ];
 
   static String _baseUrl = 'http://127.0.0.1:8000/api';

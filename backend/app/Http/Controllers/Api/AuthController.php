@@ -34,7 +34,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Register a new user with verified Email OTP and return Sanctum access token.
+     * Register a new user directly and return Sanctum access token.
      */
     public function signup(Request $request): JsonResponse
     {
@@ -44,19 +44,9 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:6'],
             'phone' => ['nullable', 'string', 'max:20'],
             'mobile' => ['nullable', 'string', 'max:20'],
-            'otp' => ['required', 'string'],
         ]);
 
         $email = strtolower(trim($validated['email']));
-
-        // Verify OTP
-        if (! EmailOtp::verify($email, $validated['otp'], 'signup')) {
-            return response()->json([
-                'success' => false,
-                'message' => __('auth.invalid_otp'),
-            ], 422);
-        }
-
         $phone = $validated['phone'] ?? $validated['mobile'] ?? null;
 
         $user = User::create([
@@ -123,14 +113,13 @@ class AuthController extends Controller
     }
 
     /**
-     * Authenticate an existing user via email (with OTP verification) and return Sanctum access token.
+     * Authenticate an existing user directly with email and password and return Sanctum access token.
      */
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'email' => ['required', 'string', 'email'],
-            'password' => ['nullable', 'string'],
-            'otp' => ['nullable', 'string'],
+            'password' => ['required', 'string'],
         ]);
 
         $email = strtolower(trim($validated['email']));
@@ -143,48 +132,26 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Case 1: OTP is provided -> Verify OTP and issue token
-        if (! empty($validated['otp'])) {
-            if (! EmailOtp::verify($email, $validated['otp'], 'login')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => __('auth.invalid_otp'),
-                ], 422);
-            }
-
-            $token = $user->createToken('auth_token')->plainTextToken;
-
-            return response()->json([
-                'success' => true,
-                'message' => __('auth.login_success'),
-                'token' => $token,
-                'token_type' => 'Bearer',
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                ],
-            ]);
-        }
-
-        // Case 2: OTP not yet provided -> Verify password and send OTP to email
-        if (empty($validated['password']) || ! Hash::check($validated['password'], $user->password)) {
+        if (! Hash::check($validated['password'], $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => __('auth.failed'),
             ], 401);
         }
 
-        $otp = EmailOtp::generate($user->email, 'login');
-        EmailOtp::sendEmail($user->email, $otp, 'login');
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'success' => true,
-            'requires_otp' => true,
-            'message' => __('auth.otp_sent'),
-            'email' => $user->email,
-            'debug_otp' => app()->environment(['local', 'testing']) ? $otp : null,
+            'message' => __('auth.login_success'),
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+            ],
         ]);
     }
 
